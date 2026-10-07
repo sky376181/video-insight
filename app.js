@@ -25,7 +25,7 @@ function switchView(view){for(const name of ['New','History','Rules']){$('tab'+n
 for(const name of ['New','History','Rules'])$('tab'+name).onclick=()=>switchView(name);
 $('images').onchange=e=>{imageUrls.forEach(URL.revokeObjectURL);const files=[...e.target.files];imageUrls=files.map(URL.createObjectURL);$('shots').replaceChildren(...imageUrls.map(url=>{const im=document.createElement('img');im.src=url;im.alt='後台數據截圖';return im}));$('imageNames').textContent=files.map(f=>f.name).join('、')};
 $('videoFile').onchange=e=>{if(videoUrl)URL.revokeObjectURL(videoUrl);const f=e.target.files[0];if(!f)return;videoUrl=URL.createObjectURL(f);$('preview').src=videoUrl;$('preview').style.display='block';$('videoName').textContent=f.name+' · '+(f.size/1048576).toFixed(1)+' MB'};
-function norm(s){return String(s).normalize('NFKC').replace(/[，]/g,',').replace(/[：]/g,':')}
+function norm(s){return String(s).normalize('NFKC').replace(/[，]/g,',').replace(/[：]/g,':').replace(/([\u3400-\u9fff])[ \t]+(?=[\u3400-\u9fff])/g,'$1')}
 function numberToken(s,kind){const text=norm(s).trim();if(kind==='time'){const t=text.match(/(?:\d{1,2}:)?\d{1,2}:\d{2}/);if(t){const p=t[0].split(':').map(Number);return p.reduce((a,v)=>a*60+v,0)}const sec=text.match(/(\d+(?:\.\d+)?)\s*(?:秒|sec(?:onds?)?)/i);return sec?+sec[1]:null}if(kind==='percent'){const m=text.match(/(\d+(?:\.\d+)?)\s*%/);return m&&+m[1]<=100?+m[1]:null}const m=text.match(/^(?:[:：\s=]*)?(\d{1,3}(?:,\d{3})+|\d+(?:\.\d+)?)\s*([萬万kKmM])?\s*(?:次|人|次觀看|views?|plays?)?\s*$/i);if(!m)return null;const x=+m[1].replaceAll(',','')*({'萬':10000,'万':10000,k:1000,K:1000,m:1000000,M:1000000}[m[2]]||1);return x>0?x:null}
 const LABELS={
  views:/觀看(?:次數|數)?|播放(?:次數|數)?|瀏覽次數|(?:video\s*)?views?|plays?/i,
