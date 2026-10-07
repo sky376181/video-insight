@@ -49,7 +49,27 @@ async function frameAt(video,time){return new Promise((resolve,reject)=>{const t
 function frameDifference(a,b){const c=document.createElement('canvas');c.width=64;c.height=36;const ctx=c.getContext('2d',{willReadFrequently:true});ctx.drawImage(a,0,0,64,36);const x=ctx.getImageData(0,0,64,36).data;ctx.drawImage(b,0,0,64,36);const y=ctx.getImageData(0,0,64,36).data;let sum=0;for(let i=0;i<x.length;i+=4)sum+=Math.abs(x[i]-y[i])+Math.abs(x[i+1]-y[i+1])+Math.abs(x[i+2]-y[i+2]);return sum/(64*36*3)}
 function uniqueTimes(duration){const end=Math.max(0,duration-.05),opening=[.2,1.2,2.5].filter(t=>t<duration),rest=Array.from({length:9},(_,i)=>Math.max(3,duration*(i+1)/10));return [...new Set([...opening,...rest].map(t=>Math.min(Math.max(0,t),end).toFixed(1)))].map(Number)}
 function cleanCaption(data){const candidates=ocrLines(data);const lines=candidates.length?candidates:[{text:data.text||'',confidence:data.confidence||0}];return lines.filter(({text,confidence})=>{const cjk=(text.match(/[\u3400-\u9fff]/g)||[]).length,words=text.match(/[A-Za-z]{3,}/g)||[],junk=(text.match(/[|_~^]/g)||[]).length;return junk<3&&((cjk>=4&&confidence>=42)||(cjk>=2&&confidence>=70)||(words.length>=3&&confidence>=55))}).map(x=>x.text).slice(0,3).join(' ').slice(0,110)}
-async function videoAnalysis(worker){const video=$('preview'),duration=await waitMetadata(video),frames=[],captions=[];if(!Number.isFinite(duration)||duration<=0)throw new Error('影片時長無法讀取');const times=uniqueTimes(duration);for(let i=0;i<times.length;i++){status(`辨識影片文字 ${i+1}/${times.length}…`);try{const frame=await frameAt(video,times[i]);frames.push(frame);let data=(await worker.recognize(frame,{}, {blocks:true})).data,text=cleanCaption(data);if(!text&&(i<3||i%3===0)){const enhanced=enhancedCanvas(frame,null,1500);data=(await worker.recognize(enhanced,{}, {blocks:true})).data;text=cleanCaption(data)}captions.push({at:times[i],text})}catch(e){captions.push({at:times[i],text:''})}}const changes=frames.length>1?frames.slice(1).map((f,i)=>frameDifference(frames[i],f)):[];return {duration,captionSamples:captions,openingChange:changes[0]??null}}
+async function videoAnalysis(worker){
+ const video=$('preview'),duration=await waitMetadata(video),captions=[];
+ if(!Number.isFinite(duration)||duration<=0)throw new Error('影片時長無法讀取');
+ const times=uniqueTimes(duration);let firstFrame=null,openingChange=null;
+ for(let i=0;i<times.length;i++){
+  status(`辨識影片文字 ${i+1}/${times.length}…`);
+  try{
+   const frame=await frameAt(video,times[i]);
+   if(i===0)firstFrame=frame;
+   else if(i===1&&firstFrame){openingChange=frameDifference(firstFrame,frame);firstFrame=null}
+   let data=(await worker.recognize(frame,{}, {blocks:true})).data,text=cleanCaption(data);
+   if(!text&&(i<3||i%3===0)){
+    const enhanced=enhancedCanvas(frame,null,1500);
+    data=(await worker.recognize(enhanced,{}, {blocks:true})).data;
+    text=cleanCaption(data)
+   }
+   captions.push({at:times[i],text})
+  }catch(e){captions.push({at:times[i],text:''})}
+ }
+ return {duration,captionSamples:captions,openingChange}
+}
 function buildResult(m,video,raw,history=[]){const v=metricsValues(m),share=rate(v.shares,v.views),save=rate(v.saves,v.views),watch=v.average!=null&&video?.duration?Math.round(v.average/video.duration*100):null,caption=[...new Set(video?.captionSamples.map(x=>x.text).filter(Boolean)||[])].join(' / ').slice(0,450),opening=video?.captionSamples.filter(x=>x.at<=3).find(x=>x.text)?.text||'';let flags=[],advice=[];
  if(v.views==null)flags.push(['觀看數未辨識','這次無法可靠地配對觀看數與標籤；不會把疑似 0 或其他欄位的數字當成觀看數。請換一張清晰的後台截圖重新分析。']);
  if(!caption&&video)flags.push(['影片字幕未可靠辨識','目前只能確認片長與畫面變化，無法根據影片內容判斷開頭或改寫口播。若影片有內嵌字幕，請使用清晰的原檔重新分析。']);
