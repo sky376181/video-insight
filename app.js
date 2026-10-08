@@ -97,6 +97,62 @@ function scriptInsight(source){
  const draft=[`【原稿開頭】\n${excerpt(first)}`,`【建議先改】\n${/^(大家好|嗨|哈囉|今天要|我是)/.test(first)?'刪去招呼，從原稿裡最具體的事件或問題開場。':'保留這句的核心意思，刪到 3 秒能講完；優先留下具體問題或反差。'}`,story?`【保留你的真實故事】\n${excerpt(story)}`:'【故事待補】\n填入你自己真正遇到的一個場景與反應。',turn?`【轉折原句】\n${excerpt(turn)}`:'【轉折待補】\n說出你原本的想法和後來改變的觀察。',action?`【方法原句】\n${excerpt(action)}`:'【方法待補】\n只留一個觀眾現在能做的動作。',`【原稿結尾】\n${excerpt(last)}`,`【下一版提醒】\n以上引用你的原稿並指出修改位置；未補的故事和觀點需要你確認，程式不會編造經歷。`].join('\n\n');
  return {advice,draft,opening:first}
 }
+function scriptParts(source){
+ const parts=String(source||'').split(/(?<=[。！？!?])|\n+/).map(s=>s.trim()).filter(Boolean);
+ return {first:parts[0]||'',last:parts.at(-1)||'',parts};
+}
+const quote=s=>s.length>82?s.slice(0,82)+'…':s;
+const MEDIAN=values=>{const sorted=[...values].sort((a,b)=>a-b);return sorted[Math.floor(sorted.length/2)]};
+function historyMatches(history,source,m,video){
+ const words=s=>{const clean=String(s||'').replace(/[\s\p{P}\p{S}]+/gu,'');const tokens=new Set();for(let i=0;i<clean.length-1;i++)tokens.add(clean.slice(i,i+2));return tokens};
+ const current=words(source),v=metricsValues(m),results=[];
+ for(const r of history){
+  if(!r?.id||!r.metrics)continue;
+  const old=words(r.sourceScript),common=[...current].filter(w=>old.has(w)).length;
+  const textScore=current.size>=8&&old.size>=8?common/Math.min(current.size,old.size):0;
+  const oldV=metricsValues(r.metrics),duration=video?.duration,oldDuration=r.video?.duration;
+  const durationMatch=duration&&oldDuration&&Math.abs(duration-oldDuration)/Math.max(duration,oldDuration)<=.3;
+  const retentionMatch=v.retention!=null&&oldV.retention!=null&&Math.abs(v.retention-oldV.retention)<=10;
+  const shareMatch=v.views>0&&oldV.views>0&&v.shares!=null&&oldV.shares!=null&&Math.abs(v.shares/v.views-oldV.shares/oldV.views)<=.005;
+  // Require actual script overlap; similar numbers alone do not imply similar content.
+  if(textScore>=.21&&common>=5)results.push({record:r,score:textScore+(durationMatch?.08:0)+(retentionMatch?.04:0)+(shareMatch?.03:0),reason:`腳本相近${durationMatch?'、片長接近':''}${retentionMatch?'、前 3 秒留存接近':''}`});
+ }
+ return results.sort((a,b)=>b.score-a.score).slice(0,3);
+}
+function fourPartAnalysis(m,video,history,source,caption){
+ const v=metricsValues(m),{first,last,parts}=scriptParts(source||caption),known=!!(source||caption),opening=quote(first),ending=quote(last);
+ const baseline=history.map(r=>r.metrics?.retention?.value).filter(n=>typeof n==='number'&&n>=0&&n<=100),personal=baseline.length>=3?MEDIAN(baseline):null;
+ let retention;
+ if(v.retention==null)retention='沒有前 3 秒留存數據，無法判斷實際停留；可填入後台百分比。先以 70% 當作暫定測試目標，這不是平台公認的「好」門檻。';
+ else retention=`本支前 3 秒留存 ${v.retention}%。${v.retention>=70?'達到暫定的 70% 測試線；仍要觀察後續掉點。':'低於暫定的 70% 測試線；優先測試更直接的第一句與第一格畫面。'} 70% 只是起步目標，並非平台標準。`;
+ if(personal!=null)retention+=` 你過去 ${baseline.length} 支有數據影片的中位數為 ${personal}%；本支${v.retention==null?'填入數據後可對照':v.retention>personal?'高於':v.retention===personal?'等於':'低於'}個人中位數。比較時請優先挑相同平台與相近片長。`;
+ const painPattern=/你(?:也|是不是|有沒有|會不會)|困擾|煩惱|卡住|痛|需要|不想|想要|一直|明明|為什麼|卻|沒辦法|害怕|擔心|不敢|壓力|焦慮/;
+ const problem=(painPattern.test(first)?first:'')||parts.find((s,i)=>i>0&&painPattern.test(s))||'';
+ const solution=parts.find(s=>/你可以|方法|步驟|先(?:做|把|試|從)|第一步|做法|教你|試著|記得|只要/.test(s))||'';
+ const story=parts.find(s=>/我(?:以前|曾經|當時|那天|後來|發現|遇到|原本)|親身|結果我|朋友跟我/.test(s))||'';
+ const cta=parts.slice(-3).find(s=>/追蹤|留言|分享|轉發|收藏|儲存|傳給|標記|點連結|私訊|預約|祝你|希望你|願你|祝福/.test(s))||'';
+ const engagements=v.views>0?`分享率 ${rate(v.shares,v.views)}、轉發率 ${rate(v.reposts,v.views)}、儲存率 ${rate(v.saves,v.views)}。這些數據只能顯示行動結果，無法單靠數字證明觀眾為何行動。`:'觀看數未提供，無法計算分享、轉發或儲存率。';
+ const sections=[
+  ['1｜前 3 秒：能不能讓人停下來',`${known?`第一句「${opening}」。${/^(大家好|嗨|哈囉|今天要|我是)/.test(first)?'先刪掉招呼，從問題或反差開始。':'讓第一句在 3 秒內點出問題、反差或結果，再檢查第一格畫面是否呼應。'}`:'沒有可讀的開場文字，無法評斷這支影片的開頭；請貼上腳本。'} ${retention}`],
+  ['2｜需求與痛點：有沒有留下來的理由',known?(problem?`原稿找到「${quote(problem)}」。確認這句有沒有說清楚「誰遇到什麼狀況」，以及繼續看能得到什麼；別只講抽象觀念。`:'原稿沒有找到明確的觀眾需求句。可在開場後補「誰、遇到什麼困擾、看完能得到什麼」，並用自己的實際情境表達。'):'沒有完整文字，無法確認內容是否講到觀眾需求；請貼上腳本。'],
+  ['3｜解法或故事：值不值得分享與儲存',`${known?`${solution?`方法句「${quote(solution)}」；檢查觀眾是否能照著做第一步。`:'沒有找到清楚可操作的方法；教學片可補一個現在能做的步驟。'} ${story?`故事句「${quote(story)}」；保留真實場景、反應和轉變，讓有相同經歷的人能對號入座。`:'沒有找到明確的個人故事；故事片可補一個真實場景、當時反應與後來發現，不編造經歷。'}`:'未提供腳本，無法判斷是否有具體解法或故事。'} ${engagements}`],
+  ['4｜CTA：下一步要做什麼',known?(cta?`結尾找到「${quote(cta)}」。${/追蹤|留言|分享|轉發|收藏|儲存|傳給|標記|點連結|私訊|預約/.test(cta)?'請確認只保留一個最主要的指令，說清楚對方為什麼要做。':'祝福型結尾也成立；若這支的目標是追蹤、留言或分享，可以另測一版明確指令。'}`:`最後一句「${ending}」未找到明確 CTA 或祝福。依影片目標選一個：追蹤、留言一個簡單問題、傳給特定朋友、儲存作為步驟清單，或用一句真誠祝福收尾。`):'未提供結尾文字，無法判斷是否有 CTA；可以貼上完整腳本。']
+ ];
+ return sections;
+}
+function historicalLearning(history,source,m,video){
+ const matches=historyMatches(history,source,m,video);
+ if(!source)return {matches:[],note:'本次沒有貼腳本；有數據仍會儲存，但無法可靠比對內容相似的舊影片。'};
+ if(!matches.length)return {matches:[],note:'目前沒有足夠相似的舊腳本。這次的數據、四段分析與回饋會保存，供下一支影片參考。'};
+ const lines=matches.map(({record:r,reason})=>{const v=metricsValues(r.metrics);const date=new Date(r.createdAt).toLocaleDateString('zh-TW');const metric=v.views>0?`分享率 ${rate(v.shares,v.views)}、儲存率 ${rate(v.saves,v.views)}、前 3 秒留存 ${v.retention==null?'未提供':v.retention+'%'}`:'觀看數未提供';const feedback=r.feedback?.length?`你當時排除：${r.feedback.join('、')}`:'當時沒有排除建議';const first=r.advice?.[0]?.[1]||r.sections?.[0]?.[1]||'無舊建議';return `${date}（${reason}）：${metric}。舊建議「${quote(first)}」；${feedback}。`});
+ return {matches:matches.map(x=>x.record.id),note:`找到 ${matches.length} 支相似影片。${lines.join(' ')} 這是過往參考，不能只憑相關性證明哪個改法造成成效。`};
+}
+function finishAnalysis(result,history,source,video,caption){
+ result.sections=fourPartAnalysis(result.metrics,video,history,source,caption);
+ result.historyContext=historicalLearning(history,source,result.metrics,video);
+ result.analysisVersion=2;
+ return result;
+}
 function buildResult(m,video,raw,history=[],sourceScript=''){const v=metricsValues(m),share=rate(v.shares,v.views),save=rate(v.saves,v.views),repost=rate(v.reposts,v.views),watch=v.average!=null&&video?.duration?Math.round(v.average/video.duration*100):null,caption=[...new Set(video?.captionSamples.map(x=>x.text).filter(Boolean)||[])].join(' / ').slice(0,450),opening=video?.captionSamples.filter(x=>x.at<=3).find(x=>x.text)?.text||'';let flags=[],advice=[];
  if(v.views==null)flags.push(['觀看數未提供','沒有可靠的觀看數，這次無法計算分享、轉發與儲存率；可以直接在上方填入觀看數。']);
  if(!caption&&video&&!sourceScript)flags.push(['影片字幕未可靠辨識','目前只能確認片長與畫面變化。可直接在上方貼上完整腳本，不必等待影片文字辨識。']);
@@ -107,7 +163,7 @@ function buildResult(m,video,raw,history=[],sourceScript=''){const v=metricsValu
  const prior=history.map(r=>({views:r.metrics?.views?.value,shares:r.metrics?.shares?.value})).filter(x=>x.views>0&&x.shares!=null).map(x=>x.shares/x.views).sort((a,b)=>a-b);
  if(prior.length>=3&&v.views>0&&v.shares!=null){const baseline=prior[Math.floor(prior.length/2)];flags.push(['和你過去影片比較',`目前分享率 ${share}；你先前 ${prior.length} 支影片的中位數約 ${(baseline*100).toFixed(1)}%。${v.shares/v.views<baseline?' 這支可優先測試更明確的轉發情境。':' 這支的分享率高於你的過往中位數，可保留有效段落。'}`])}
  if(Object.values(m).some(x=>x?.confidence==='需核對'))flags.push(['部分數字需核對','截圖的標籤與數字不在同一行，可能配對錯誤；請對照下方辨識文字。']);
- if(sourceScript.trim()){const insight=scriptInsight(sourceScript.trim());return {metrics:m,video,raw,flags,advice:insight.advice,script:insight.draft,share,save,repost,sourceScript:sourceScript.trim()}}
+ if(sourceScript.trim()){const insight=scriptInsight(sourceScript.trim());return finishAnalysis({metrics:m,video,raw,flags,advice:insight.advice,script:insight.draft,share,save,repost,sourceScript:sourceScript.trim()},history,sourceScript.trim(),video,caption)}
  if(prefs.hook)advice.push(['0–3 秒｜先給理由',opening?`畫面辨識到「${opening}」。檢查第一格畫面與第一句是否直接指出痛點或反差。`:'前段沒有辨識到可讀字幕。第一格先放一句具體問題或反差，別從打招呼開始。']);
  if(video?.openingChange!=null&&video.openingChange<9)advice.push(['開頭畫面變化較小','前兩個取樣畫面相近。可檢查前 3 秒是否需要更早切到關鍵畫面；這不能直接判定觀眾流失。']);
  if(prefs.story)advice.push(['中段｜個人故事','只留一個真實片段：你當時怎麼做、遇到什麼、後來發現什麼。']);
@@ -122,10 +178,12 @@ function buildResult(m,video,raw,history=[],sourceScript=''){const v=metricsValu
  const tone=rejects['太雞湯']||rejects['不像我的口吻']||prefs.voice?'直接講具體經歷，不用溫柔鼓勵句。':'保持自然口吻。';
  const hook=opening?`把畫面上的「${opening}」改成對觀眾說的問題或反差；如果原句已夠直接就保留。`:'第一句先點出觀眾正在遇到的具體問題（影片前段沒有可辨識字幕）。';
  const script=[!caption?'【辨識不足】\n無法可靠讀出影片的字幕或口播，下面僅提供你的創作架構，不能當成這支影片的逐字改稿。':null,prefs.hook?`【0–3 秒｜開頭】\n${hook}`:null,prefs.story?'【3–15 秒｜你的真實故事】\n用一個具體時刻：發生什麼事 → 你當下的反應。影片沒有完整口播逐字稿，請用你的實際經驗補這段。':null,prefs.turn?'【轉折】\n「我原本以為＿＿，後來發現＿＿。」把真正的觀察填進去。':null,prefs.action?'【方法】\n只留一個現在就能做的動作，說清楚第一步。':null,prefs.share?'【結尾】\n用一句讓朋友想互傳的觀察收尾，再問一個好回答的問題。':null,`【語氣】\n${tone}`,caption?`【影片抽樣畫面文字】\n${caption}`:'【提醒】\n未讀到足夠字幕，無法判斷完整口播的論點與用字。'].filter(Boolean).join('\n\n');
- return {metrics:m,video,raw,flags,advice,script,share,save,repost};
+ return finishAnalysis({metrics:m,video,raw,flags,advice,script,share,save,repost},history,'',video,caption);
 }
 function renderResult(r){
  current=r;$('results').classList.add('show');
+ $('framework').innerHTML=(r.sections||[]).map(([h,b])=>`<div class="flag"><b>${safe(h)}</b>${safe(b)}</div>`).join('')||'<p class="small">這筆是舊版紀錄，仍可查看當時保存的完整建議。</p>';
+ $('pastLearning').textContent=r.historyContext?.note||'這筆是舊版紀錄，當時的分析與回饋仍保留在歷史紀錄。';
  const rows=[['觀看數',r.metrics.views?.value],['按讚數',r.metrics.likes?.value],['留言數',r.metrics.comments?.value],['分享數',r.metrics.shares?.value],['轉發數',r.metrics.reposts?.value],['儲存數',r.metrics.saves?.value],['分享率',r.share],['轉發率',r.repost??rate(r.metrics.reposts?.value,r.metrics.views?.value)],['儲存率',r.save],['平均觀看',r.metrics.average?.value!=null?r.metrics.average.value+' 秒':null],['前 3 秒留存',r.metrics.retention?.value!=null?r.metrics.retention.value+'%':null],['片長',r.video?.duration?r.video.duration.toFixed(1)+' 秒':null]];
  $('stats').innerHTML=rows.map(([k,v])=>`<div class="stat"><small>${k}</small><strong>${safe(v??'未提供')}</strong></div>`).join('');
  $('flags').innerHTML=r.flags.map(([h,b])=>`<div class="flag"><b>${safe(h)}</b>${safe(b)}</div>`).join('');
