@@ -82,19 +82,19 @@ function scriptInsight(source){
  const turn=parts.find(s=>/原本以為|後來發現|才發現|沒想到|其實/.test(s))||parts.find(s=>/結果/.test(s))||'';
  const action=parts.find(s=>/第一步|你可以|試著|先做|方法|步驟/.test(s))||'';
  const advice=[];
- if(prefs.hook)advice.push(['0–3 秒｜檢查原稿開頭',`你的第一句是「${excerpt(first)}」。${/^(大家好|嗨|哈囉|今天要|我是)/.test(first)?'先移掉招呼與自我介紹，直接講觀眾的問題。':'確認這一句在 3 秒內能說完，並讓觀眾知道為何要繼續看。'}`]);
- if(prefs.story)advice.push(['中段｜真實片段',story?`原稿有「${excerpt(story)}」。檢查它是否交代當時的具體場景與你的反應。`:'原稿未找到明確的個人經歷句；選一件你真的遇過的事，補上時間、場景與當時反應。']);
- if(prefs.turn)advice.push(['轉折｜觀點變化',turn?`原稿的轉折是「${excerpt(turn)}」。把「後來發現」後面最不直覺的觀察講清楚。`:'原稿未找到明顯轉折；可檢查是否有「原本以為…後來發現…」的具體觀察。']);
- if(prefs.action)advice.push(['方法｜可執行性',action?`原稿寫到「${excerpt(action)}」。讓觀眾知道第一步現在就能怎麼做。`:'原稿未找到清楚的方法句；保留 1 個可以立刻開始的動作，教學類可拆成 3 步。']);
- if(prefs.share)advice.push(['結尾｜分享理由',`最後一句是「${excerpt(last)}」。${/分享|轉給|傳給|留言|收藏/.test(last)?'檢查這句是否先給觀眾想分享的理由，再提出動作。':'想提高分享，可以點出「這句話適合傳給哪一種朋友」，避免只用泛泛的追蹤口號。'}`]);
- if(prefs.business)advice.push(['IP 與變現','檢查整篇是否讓觀眾知道你能解決哪一種問題，並自然接到你的內容、服務或產品。']);
+ if(prefs.hook)advice.push(['開場承諾｜先交代看點',`第一句「${excerpt(first)}」。${/^(大家好|嗨|哈囉|今天要|我是)/.test(first)?'開場先用原稿中的具體衝突或轉變，招呼移到後面。':'確認這句說的是觀眾的處境或能得到的結果，而非只有主題名稱。'} 下一版只更換第一句與第一格畫面，主體不變，觀察前 3 秒留存是否提升。`]);
+ if(prefs.story)advice.push(['敘事證據｜讓觀點可信',story?`原稿的故事線索「${excerpt(story)}」。補足當時的場景、做過的動作和結果；若只是「我覺得」，觀眾較難看見轉變。`:'目前未找到明確的個人事件。若走故事型，請用一個真實片段交代場景、動作、代價；若走教學型，不必為了公式硬塞故事。']);
+ if(prefs.turn)advice.push(['訊息轉折｜兌現開場承諾',turn?`轉折句「${excerpt(turn)}」。檢查它是否回答了開場提出的問題；讓「原本以為」和「後來發現」各有具體內容。`:'如果開場設下反差或疑問，中段要有明確答案；若沒有觀點轉折，不必硬寫「後來發現」。']);
+ if(prefs.action)advice.push(['可用價值｜讓觀眾有理由保存',action?`方法線索「${excerpt(action)}」。再明確一級：對象、第一步、完成時看什麼結果；能照做才有保存價值。`:'若影片承諾解法，請交付一個可立即執行的步驟；若是純共鳴故事，則以可轉述的洞見收束，不必強加教學。']);
+ if(prefs.share)advice.push(['傳播情境｜分享給誰',`結尾「${excerpt(last)}」。${/分享|轉給|傳給|留言|收藏/.test(last)?'確認觀眾轉給朋友前，已先得到值得轉述的一句話。':'若目標是分享，請具體點出適合轉給哪一種處境的朋友，避免泛稱「分享出去」。'}`]);
+ if(prefs.business)advice.push(['帳號定位｜觀眾為何追蹤','若這支目標是累積個人 IP，最後要讓觀眾知道你持續談哪類問題、下次追蹤能得到什麼；若是純故事片，可先用共鳴建立信任，不必硬置入產品。']);
  if(rejects['太空泛'])advice.push(['你曾回饋：太空泛','把抽象詞換成原稿裡真實發生的事或能拍到的動作；沒有素材的地方不編造。']);
  if(rejects['開頭太慢'])advice.unshift(['你曾回饋：開頭太慢','把背景資訊移到痛點之後，第一句直接進入事件。']);
  if(rejects['太雞湯']||rejects['不像我的口吻'])advice.push(['你的口吻','保留你原稿裡直接、有趣的說法，刪掉空泛的鼓勵句。']);
  if(rejects['缺真實故事'])advice.push(['你曾回饋：缺真實故事','用你親身經歷的一個場景承接觀點，不編造故事。']);
  if(rejects['沒有變現方向'])advice.push(['你曾回饋：沒有變現方向','在結尾自然說明你能幫哪一種人，不硬塞購買口號。']);
  if(rejects['CTA 太硬'])advice.push(['你曾回饋：CTA 太硬','先給值得傳給朋友的理由，再決定是否需要直接要求分享。']);
- const draft=[`【原稿開頭】\n${excerpt(first)}`,`【建議先改】\n${/^(大家好|嗨|哈囉|今天要|我是)/.test(first)?'刪去招呼，從原稿裡最具體的事件或問題開場。':'保留這句的核心意思，刪到 3 秒能講完；優先留下具體問題或反差。'}`,story?`【保留你的真實故事】\n${excerpt(story)}`:'【故事待補】\n填入你自己真正遇到的一個場景與反應。',turn?`【轉折原句】\n${excerpt(turn)}`:'【轉折待補】\n說出你原本的想法和後來改變的觀察。',action?`【方法原句】\n${excerpt(action)}`:'【方法待補】\n只留一個觀眾現在能做的動作。',`【原稿結尾】\n${excerpt(last)}`,`【下一版提醒】\n以上引用你的原稿並指出修改位置；未補的故事和觀點需要你確認，程式不會編造經歷。`].join('\n\n');
+ const draft=[`【開場 A｜原句】\n${excerpt(first)}`,`【開場 B｜待測方向】\n${/^(大家好|嗨|哈囉|今天要|我是)/.test(first)?`可從原稿的${story?'真實事件「'+excerpt(story)+'」':turn?'觀點轉折「'+excerpt(turn)+'」':'具體問題'}切入；只保留能在前三秒講清楚的核心句。`:'把原句的對象、問題或結果提前；不要額外製造原稿沒有的承諾。'}`,story?`【故事證據】\n${excerpt(story)}\n補足具體場景、你做了什麼，以及結果。`:'【故事證據】\n若採故事型，補一段真實經歷；純教學片可略過。',turn?`【觀點兌現】\n${excerpt(turn)}`:'【觀點兌現】\n回答開場留下的問題，不必刻意製造反轉。',action?`【可執行價值】\n${excerpt(action)}\n檢查觀眾照做的第一步是否清楚。`:'【可執行價值】\n教學片交付一個可執行步驟；共鳴片交付一個可轉述洞見。',`【結尾原句】\n${excerpt(last)}`,`【測試設計】\n先只更換開場文案與第一格畫面，其他段落維持一致；在同平台、相近片長下比較前 3 秒留存。這是改稿方向，不是替你編造的新故事。`].join('\n\n');
  return {advice,draft,opening:first}
 }
 function scriptParts(source){
@@ -121,22 +121,32 @@ function historyMatches(history,source,m,video){
 }
 function fourPartAnalysis(m,video,history,source,caption){
  const v=metricsValues(m),{first,last,parts}=scriptParts(source||caption),known=!!(source||caption),opening=quote(first),ending=quote(last);
- const baseline=history.map(r=>r.metrics?.retention?.value).filter(n=>typeof n==='number'&&n>=0&&n<=100),personal=baseline.length>=3?MEDIAN(baseline):null;
- let retention;
- if(v.retention==null)retention='沒有前 3 秒留存數據，無法判斷實際停留；可填入後台百分比。先以 70% 當作暫定測試目標，這不是平台公認的「好」門檻。';
- else retention=`本支前 3 秒留存 ${v.retention}%。${v.retention>=70?'達到暫定的 70% 測試線；仍要觀察後續掉點。':'低於暫定的 70% 測試線；優先測試更直接的第一句與第一格畫面。'} 70% 只是起步目標，並非平台標準。`;
- if(personal!=null)retention+=` 你過去 ${baseline.length} 支有數據影片的中位數為 ${personal}%；本支${v.retention==null?'填入數據後可對照':v.retention>personal?'高於':v.retention===personal?'等於':'低於'}個人中位數。比較時請優先挑相同平台與相近片長。`;
+ const comparable=history.filter(r=>!video?.duration||!r.video?.duration||Math.abs(video.duration-r.video.duration)/Math.max(video.duration,r.video.duration)<=.3);
+ const prior=(key)=>comparable.map(r=>{const n=r.metrics?.[key]?.value;return typeof n==='number'&&Number.isFinite(n)?n:null}).filter(n=>n!=null);
+ const retentionValues=prior('retention').filter(n=>n>=0&&n<=100),personal=retentionValues.length>=3?MEDIAN(retentionValues):null;
+ const priorRate=key=>comparable.map(r=>{const x=r.metrics?.[key]?.value,y=r.metrics?.views?.value;return x!=null&&y>0?x/y*100:null}).filter(x=>x!=null);
+ const shareHistory=priorRate('shares'),saveHistory=priorRate('saves');
+ const shareBase=shareHistory.length>=3?MEDIAN(shareHistory):null,saveBase=saveHistory.length>=3?MEDIAN(saveHistory):null;
+ const relative=(value,base)=>value==null||base==null?'尚無可比基準':value>base?'高於個人中位數':value<base?'低於個人中位數':'與個人中位數相同';
+ const sharePct=v.views>0&&v.shares!=null?v.shares/v.views*100:null,savePct=v.views>0&&v.saves!=null?v.saves/v.views*100:null;
+ const baselineNote='歷史比較僅供同平台、相近片長的影片參考；未記錄發布平台時，請自行確認可比性。';
+ const retention=v.retention==null?'尚未提供前 3 秒留存，無法判斷實際停留。':`前 3 秒留存 ${v.retention}%。${personal!=null?`相較 ${retentionValues.length} 支舊片中位數 ${personal}%，${relative(v.retention,personal)}。`:'目前少於 3 支可比影片，先累積自己的基準；70% 可作暫時測試目標，但不是平台通用及格線。'}`;
  const painPattern=/你(?:也|是不是|有沒有|會不會)|困擾|煩惱|卡住|痛|需要|不想|想要|一直|明明|為什麼|卻|沒辦法|害怕|擔心|不敢|壓力|焦慮/;
  const problem=(painPattern.test(first)?first:'')||parts.find((s,i)=>i>0&&painPattern.test(s))||'';
  const solution=parts.find(s=>/你可以|方法|步驟|先(?:做|把|試|從)|第一步|做法|教你|試著|記得|只要/.test(s))||'';
  const story=parts.find(s=>/我(?:以前|曾經|當時|那天|後來|發現|遇到|原本)|親身|結果我|朋友跟我/.test(s))||'';
- const cta=parts.slice(-3).find(s=>/追蹤|留言|分享|轉發|收藏|儲存|傳給|標記|點連結|私訊|預約|祝你|希望你|願你|祝福/.test(s))||'';
- const engagements=v.views>0?`分享率 ${rate(v.shares,v.views)}、轉發率 ${rate(v.reposts,v.views)}、儲存率 ${rate(v.saves,v.views)}。這些數據只能顯示行動結果，無法單靠數字證明觀眾為何行動。`:'觀看數未提供，無法計算分享、轉發或儲存率。';
+ const turn=parts.find(s=>/原本以為|後來發現|才發現|沒想到|其實/.test(s))||'';
+ const cta=parts.slice(-2).find(s=>/追蹤|留言|分享|轉發|收藏|儲存|傳給|標記|點連結|私訊|預約|祝你|希望你|願你|祝福/.test(s))||'';
+ const engagements=v.views>0?`分享率 ${rate(v.shares,v.views)}${shareBase!=null?`（個人中位數 ${shareBase.toFixed(1)}%，${relative(sharePct,shareBase)}）`:''}；儲存率 ${rate(v.saves,v.views)}${saveBase!=null?`（個人中位數 ${saveBase.toFixed(1)}%，${relative(savePct,saveBase)}）`:''}；轉發率 ${rate(v.reposts,v.views)}。`:'觀看數不足，暫時無法計算行動率。';
+ const openingTest=/^(大家好|嗨|哈囉|今天要|我是)/.test(first)?`把寒暄移走，試用原稿${story?'的真實事件「'+quote(story)+'」':turn?'的轉折「'+quote(turn)+'」':'裡的核心問題'}直接開場；第一格畫面同步呈現關鍵詞。`:'保留一個對準觀眾的問題、反差或結果；第一句和畫面要兌現同一個承諾。';
+ let crossSignal='';
+ if(personal!=null&&v.retention!=null&&shareBase!=null&&sharePct!=null&&v.retention<personal&&sharePct>shareBase)crossSignal='目前開場留存偏低、分享率相對較高；可能是進來的人願意轉述，但開場承接不足。這只是優先檢查方向。';
+ else if(personal!=null&&v.retention!=null&&saveBase!=null&&savePct!=null&&v.retention>=personal&&savePct<saveBase)crossSignal='開場留存不低、儲存率相對較低；可以優先檢查中段是否交付了可回看的一步或清單。這不能直接證明內容價值不足。';
  const sections=[
-  ['1｜前 3 秒：能不能讓人停下來',`${known?`第一句「${opening}」。${/^(大家好|嗨|哈囉|今天要|我是)/.test(first)?'先刪掉招呼，從問題或反差開始。':'讓第一句在 3 秒內點出問題、反差或結果，再檢查第一格畫面是否呼應。'}`:'沒有可讀的開場文字，無法評斷這支影片的開頭；請貼上腳本。'} ${retention}`],
-  ['2｜需求與痛點：有沒有留下來的理由',known?(problem?`原稿找到「${quote(problem)}」。確認這句有沒有說清楚「誰遇到什麼狀況」，以及繼續看能得到什麼；別只講抽象觀念。`:'原稿沒有找到明確的觀眾需求句。可在開場後補「誰、遇到什麼困擾、看完能得到什麼」，並用自己的實際情境表達。'):'沒有完整文字，無法確認內容是否講到觀眾需求；請貼上腳本。'],
-  ['3｜解法或故事：值不值得分享與儲存',`${known?`${solution?`方法句「${quote(solution)}」；檢查觀眾是否能照著做第一步。`:'沒有找到清楚可操作的方法；教學片可補一個現在能做的步驟。'} ${story?`故事句「${quote(story)}」；保留真實場景、反應和轉變，讓有相同經歷的人能對號入座。`:'沒有找到明確的個人故事；故事片可補一個真實場景、當時反應與後來發現，不編造經歷。'}`:'未提供腳本，無法判斷是否有具體解法或故事。'} ${engagements}`],
-  ['4｜CTA：下一步要做什麼',known?(cta?`結尾找到「${quote(cta)}」。${/追蹤|留言|分享|轉發|收藏|儲存|傳給|標記|點連結|私訊|預約/.test(cta)?'請確認只保留一個最主要的指令，說清楚對方為什麼要做。':'祝福型結尾也成立；若這支的目標是追蹤、留言或分享，可以另測一版明確指令。'}`:`最後一句「${ending}」未找到明確 CTA 或祝福。依影片目標選一個：追蹤、留言一個簡單問題、傳給特定朋友、儲存作為步驟清單，或用一句真誠祝福收尾。`):'未提供結尾文字，無法判斷是否有 CTA；可以貼上完整腳本。']
+  ['1｜開場留存：觀眾為什麼停下',`觀察｜${known?`原稿第一句「${opening}」；`: '沒有可靠的開場文字；'}${retention}\n判讀｜${known?'文字只能評估開場承諾，無法代表實際畫面與口播節奏。':'缺少腳本時不能判定是文案造成流失。'}${crossSignal?' '+crossSignal:''}\n下一支測試｜${known?openingTest:'貼上開場原句，並對照後台前 3 秒留存。'} ${baselineNote}`],
+  ['2｜需求承接：有沒有值得看下去的問題',`觀察｜${known?(problem?`找到需求線索「${quote(problem)}」。`:'原稿未找到明確的觀眾困境句。'):'缺少完整文字，無法評估需求承接。'}\n判讀｜${problem?'有痛點詞不代表說中了目標觀眾；還要看對象、場景與代價是否具體。':'若開場只有主題名，觀眾可能不知道接下來能得到什麼。'}\n下一支測試｜在開場後用一句話交代「誰在什麼情境卡住、看完能得到什麼」，並檢查後續內容是否兌現，不要只加更多懸念。`],
+  ['3｜內容交付：共鳴與可保存價值',`觀察｜${known?`${solution?`方法線索「${quote(solution)}」。`:'未找到明確步驟。'}${story?` 故事線索「${quote(story)}」。`:' 未找到明確個人事件。'}${turn?` 觀點轉折「${quote(turn)}」。`:''}`:'無可靠全文，無法判斷中段交付。'}${engagements}\n判讀｜${story?'故事的「場景→動作→結果」越清楚，共鳴越容易被轉述。':'故事型可補真實場景；教學型則優先交付具體步驟，不必硬塞故事。'} 分享與儲存是行為訊號，不能反推是哪一句造成。\n下一支測試｜${solution?'將方法寫到觀眾能照做的第一步，保留原有核心觀點。':'若承諾解法，加入一個可立即執行的步驟；若主打共鳴，收束成一句能轉述的洞見。'}`],
+  ['4｜CTA 轉化：指令與影片目標是否一致',`觀察｜${known?(cta?`結尾「${quote(cta)}」。`:`結尾「${ending}」未找到明確動作或祝福。`):'缺少結尾文字，無法核對 CTA。'}${v.views>0?` 留言率 ${rate(v.comments,v.views)}；分享率 ${rate(v.shares,v.views)}；儲存率 ${rate(v.saves,v.views)}。`:''}\n判讀｜${cta?/祝你|希望你|願你|祝福/.test(cta)&&!/追蹤|留言|分享|轉發|收藏|儲存|傳給|私訊|預約/.test(cta)?'祝福可以是關係型收尾，但無法直接測量追蹤或轉化。':'已出現行動線索，仍要確認是否只要求一個主要動作，以及理由是否前文已建立。':'沒有清楚下一步；若影片目標是轉化，觀眾可能不知道要做什麼。'}\n下一支測試｜依這支的單一目標選 CTA：清單或教學→儲存；高共鳴→轉給特定朋友；觀點討論→留言一個容易回答的問題；系列經營→追蹤以看後續。純陪伴片可用真誠祝福收尾。`]
  ];
  return sections;
 }
