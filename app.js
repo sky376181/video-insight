@@ -134,7 +134,7 @@ function fourPartAnalysis(m,video,history,source,caption){
  const painPattern=/你(?:也|是不是|有沒有|會不會)|困擾|煩惱|卡住|痛|需要|不想|想要|一直|明明|為什麼|卻|沒辦法|害怕|擔心|不敢|壓力|焦慮/;
  const problem=(painPattern.test(first)?first:'')||parts.find((s,i)=>i>0&&painPattern.test(s))||'';
  const solution=parts.find(s=>/你可以|方法|步驟|先(?:做|把|試|從)|第一步|做法|教你|試著|記得|只要/.test(s))||'';
- const story=parts.find(s=>/我(?:以前|曾經|當時|那天|後來|發現|遇到|原本)|親身|結果我|朋友跟我/.test(s))||'';
+ const story=parts.slice(1).find(s=>/我|那天|當時|以前|上次|那次|親身|朋友跟我/.test(s))||'';
  const turn=parts.find(s=>/原本以為|後來發現|才發現|沒想到|其實/.test(s))||'';
  const cta=parts.slice(-2).find(s=>/追蹤|留言|分享|轉發|收藏|儲存|傳給|標記|點連結|私訊|預約|祝你|希望你|願你|祝福/.test(s))||'';
  const engagements=v.views>0?`分享率 ${rate(v.shares,v.views)}${shareBase!=null?`（個人中位數 ${shareBase.toFixed(1)}%，${relative(sharePct,shareBase)}）`:''}；儲存率 ${rate(v.saves,v.views)}${saveBase!=null?`（個人中位數 ${saveBase.toFixed(1)}%，${relative(savePct,saveBase)}）`:''}；轉發率 ${rate(v.reposts,v.views)}。`:'觀看數不足，暫時無法計算行動率。';
