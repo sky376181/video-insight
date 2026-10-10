@@ -94,7 +94,7 @@ function scriptInsight(source){
  if(rejects['缺真實故事'])advice.push(['你曾回饋：缺真實故事','用你親身經歷的一個場景承接觀點，不編造故事。']);
  if(rejects['沒有變現方向'])advice.push(['你曾回饋：沒有變現方向','在結尾自然說明你能幫哪一種人，不硬塞購買口號。']);
  if(rejects['CTA 太硬'])advice.push(['你曾回饋：CTA 太硬','先給值得傳給朋友的理由，再決定是否需要直接要求分享。']);
- const draft=[`【開場 A｜原句】\n${excerpt(first)}`,`【開場 B｜待測方向】\n${/^(大家好|嗨|哈囉|今天要|我是)/.test(first)?`可從原稿的${story?'真實事件「'+excerpt(story)+'」':turn?'觀點轉折「'+excerpt(turn)+'」':'具體問題'}切入；只保留能在前三秒講清楚的核心句。`:'把原句的對象、問題或結果提前；不要額外製造原稿沒有的承諾。'}`,story?`【故事證據】\n${excerpt(story)}\n補足具體場景、你做了什麼，以及結果。`:'【故事證據】\n若採故事型，補一段真實經歷；純教學片可略過。',turn?`【觀點兌現】\n${excerpt(turn)}`:'【觀點兌現】\n回答開場留下的問題，不必刻意製造反轉。',action?`【可執行價值】\n${excerpt(action)}\n檢查觀眾照做的第一步是否清楚。`:'【可執行價值】\n教學片交付一個可執行步驟；共鳴片交付一個可轉述洞見。',`【結尾原句】\n${excerpt(last)}`,`【測試設計】\n先只更換開場文案與第一格畫面，其他段落維持一致；在同平台、相近片長下比較前 3 秒留存。這是改稿方向，不是替你編造的新故事。`].join('\n\n');
+ const draft=[`【開場 A｜原句】\n${excerpt(first)}`,`【開場 B｜待測方向】\n${/^(大家好|嗨|哈囉|今天要|我是)/.test(first)?`可從原稿的${story?'真實事件「'+excerpt(story)+'」':turn?'觀點轉折「'+excerpt(turn)+'」':'具體問題'}切入；只保留能在前三秒講清楚的核心句。`:'把原句的對象、問題或結果提前；不要額外製造原稿沒有的承諾。'}`,story?`【故事證據】\n${excerpt(story)}\n補足具體場景、你做了什麼，以及結果。`:'【故事證據】\n若採故事型，補一段真實經歷；純教學片可略過。',turn?`【觀點兌現】\n${excerpt(turn)}`:'【觀點兌現】\n回答開場留下的問題，不必刻意製造反轉。',action?`【可執行價值】\n${excerpt(action)}\n檢查觀眾照做的第一步是否清楚。`:'【可執行價值】\n教學片交付一個可執行步驟；共鳴片交付一個可轉述洞見。',`【結尾原句】\n${excerpt(last)}`,`【分享收尾｜若這支以分享為目標】\n先把「${excerpt(turn||action||story||first)}」濃縮成一句能獨立理解的觀察，再說明哪種朋友會用得上。`,`【留言收尾｜若這支以互動為目標】\n圍繞「${excerpt(story||turn||first)}」問一個具體問題，例如「如果是你遇到這種情境，第一步會怎麼做？」先說出你自己的做法，再邀請觀眾回一個動作。`,`【測試設計】\n完播、分享、留言的收尾是不同版本的候選方案；下一支只改一個主要變因。在同平台、相近片長下分別比較留存、分享率或留言率；不要把這份方向當成對成效的保證。`].join('\n\n');
  return {advice,draft,opening:first}
 }
 function scriptParts(source){
@@ -130,7 +130,7 @@ function fourPartAnalysis(m,video,history,source,caption){
  const relative=(value,base)=>value==null||base==null?'尚無可比基準':value>base?'高於個人中位數':value<base?'低於個人中位數':'與個人中位數相同';
  const sharePct=v.views>0&&v.shares!=null?v.shares/v.views*100:null,savePct=v.views>0&&v.saves!=null?v.saves/v.views*100:null;
  const baselineNote='歷史比較僅供同平台、相近片長的影片參考；未記錄發布平台時，請自行確認可比性。';
- const retention=v.retention==null?'尚未提供前 3 秒留存，無法判斷實際停留。':`前 3 秒留存 ${v.retention}%。${personal!=null?`相較 ${retentionValues.length} 支舊片中位數 ${personal}%，${relative(v.retention,personal)}。`:'目前少於 3 支可比影片，先累積自己的基準；70% 可作暫時測試目標，但不是平台通用及格線。'}`;
+ const retention=v.retention==null?'尚未提供前 3 秒留存，無法判斷實際停留。':`前 3 秒留存 ${v.retention}%。${personal!=null?`相較 ${retentionValues.length} 支舊片中位數 ${personal}%，${relative(v.retention,personal)}。`:'目前少於 3 支可比影片，先累積自己的基準；不以單一百分比作通用及格線。'}`;
  const painPattern=/你(?:也|是不是|有沒有|會不會)|困擾|煩惱|卡住|痛|需要|不想|想要|一直|明明|為什麼|卻|沒辦法|害怕|擔心|不敢|壓力|焦慮/;
  const problem=(painPattern.test(first)?first:'')||parts.find((s,i)=>i>0&&painPattern.test(s))||'';
  const solution=parts.find(s=>/你可以|方法|步驟|先(?:做|把|試|從)|第一步|做法|教你|試著|記得|只要/.test(s))||'';
@@ -176,7 +176,7 @@ function growthDirection(m,video,history,source,caption){
  return [
   ['完播｜讓開場的承諾在中段兌現',`原稿與數據｜${opening}。${average}${v.retention!=null?`前 3 秒留存 ${v.retention}%。`:''}\n下一版｜第一格畫面用一個看得懂的場景或結果，口播直接說明誰遇到什麼困境；${payoff}刪掉重複背景，結尾盡快回扣開場問題。\n驗證｜先看前 3 秒留存，再看留存曲線掉點與完播率（若後台有提供）；同平台、相近片長比較。只有平均觀看時，不寫「完播提升」。`],
   ['分享｜讓觀眾有一個具體的轉述理由',`原稿與數據｜${known?`目前的轉折或價值線索「${quote(shareSeed||last)}」。`:'缺少可靠全文。'}分享率 ${rateText('shares')}，轉發率 ${rateText('reposts')}；個人分享率基準 ${medianRate('shares')}。\n下一版｜${sharePlan}${hasShare?'保留原有分享指令，但檢查前文是否已給足理由。':'若這支目標是分享，最後指出哪一種處境的朋友會用得上，避免泛稱「幫我分享」。'}教學內容可另給可回看的簡短步驟，對照儲存率。\n驗證｜比較分享數／觀看數與轉發數／觀看數；流量來源與受眾不同也可能改變比率，不能把變動直接歸因於某句文案。`],
-  ['留言｜用具體選擇取代空泛提問',`原稿與數據｜結尾「${quote(last)}」；留言率 ${rateText('comments')}，個人基準 ${medianRate('comments')}。\n下一版｜${commentPlan}${hasComment?'目前有互動線索，改成只問一題，且先給自己的立場或做法。':'內容交付後再問一題；不要同時要求追蹤、分享與留言。'}避免用「你覺得呢」或為了互動設無關爭議。\n驗證｜比較留言數／觀看數，也讀留言是否真的回應影片觀點；下一支只改一個主要變因，記下你的主觀回饋。`]
+  ['留言｜用具體選擇取代空泛提問',`原稿與數據｜${known?`結尾「${quote(last)}」；`:'缺少可靠結尾文字；'}留言率 ${rateText('comments')}，個人基準 ${medianRate('comments')}。\n下一版｜${commentPlan}${hasComment?'目前有互動線索，改成只問一題，且先給自己的立場或做法。':'內容交付後再問一題；不要同時要求追蹤、分享與留言。'}避免用「你覺得呢」或為了互動設無關爭議。\n驗證｜比較留言數／觀看數，也讀留言是否真的回應影片觀點；下一支只改一個主要變因，記下你的主觀回饋。`]
  ];
 }
 function finishAnalysis(result,history,source,video,caption){
